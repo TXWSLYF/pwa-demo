@@ -1,6 +1,6 @@
 var cacheName = 'latestNews-v1';
 
-// Cache our known resources during install
+// 预加载资源
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(cacheName)
@@ -17,31 +17,42 @@ self.addEventListener('install', event => {
   );
 });
 
-// Cache any new resources as they are fetched
+// 缓存已加载过的资源
 self.addEventListener('fetch', function(event) {
   event.respondWith(
     caches.match(event.request, { ignoreSearch: true })
     .then(function(response) {
       if (response) {
-        return response;
+        return response
       }
-      var fetchRequest = event.request.clone();
+      var fetchRequest = event.request.clone()
 
       return fetch(fetchRequest).then(
         function(response) {
           if(!response || response.status !== 200) {
-            return response;
+            return response
           }
 
-          var responseToCache = response.clone();
+          var responseToCache = response.clone()
           caches.open(cacheName)
           .then(function(cache) {
-            cache.put(event.request, responseToCache);
-          });
+            cache.put(event.request, responseToCache)
+          })
 
           return response;
         }
-      );
+      )
     })
-  );
-});
+  )
+})
+
+self.addEventListener('push', e => {
+  console.log('push', e)
+  let payload = e.data ? JSON.parse(e.data) : 'no payload'
+  let title = '新闻早知道'
+  e.waitUntil(
+    self.registration.showNotification(title, {
+      body: payload.msg
+    })
+  )
+})
