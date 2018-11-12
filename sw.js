@@ -45,14 +45,3 @@ self.addEventListener('fetch', function(event) {
     })
   )
 })
-
-self.addEventListener('push', e => {
-  console.log('push', e)
-  let payload = e.data ? JSON.parse(e.data) : 'no payload'
-  let title = '新闻早知道'
-  e.waitUntil(
-    self.registration.showNotification(title, {
-      body: payload.msg
-    })
-  )
-})
