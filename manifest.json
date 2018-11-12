@@ -1,6 +1,6 @@
 {
-  "name": "Progressive Times web app",
-  "short_name": "Progressive Times",
+  "name": "新闻早知道",
+  "short_name": "新闻早知道",
   "start_url": "./index.html",
   "theme_color": "#FFDF00",
   "background_color": "#FFDF00",

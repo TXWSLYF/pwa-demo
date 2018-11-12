@@ -34,6 +34,7 @@ function loadArticle(){
 function buildWebPage(result){
   document.getElementById('article').innerHTML = result.description;
   document.getElementById('article-title').innerHTML = result.title;
+  document.title = result.title;
 }
 
 loadArticle();
