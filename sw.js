@@ -45,3 +45,27 @@ self.addEventListener('fetch', function(event) {
     })
   )
 })
+
+self.addEventListener('push', function(event) {
+  console.log('[Service Worker] Push Received.');
+  console.log(`[Service Worker] Push had this data: "${event.data.text()}"`)
+  let body = JSON.parse(event.data.text())
+
+  const title = body.title || '新闻早知道'
+  const options = {
+    body: body.msg,
+    data: body.url,
+    icon: 'images/homescreen.png',
+    badge: 'images/homescreen.png'
+  }
+
+  event.waitUntil(self.registration.showNotification(title, options))
+})
+
+self.addEventListener('notificationclick', function (event) {
+  event.notification.close()
+
+  event.waitUntil(
+    clients.openWindow(event.notification.data)
+  )
+})

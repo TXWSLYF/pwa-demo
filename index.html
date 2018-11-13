@@ -11,6 +11,7 @@
   <meta name="msapplication-navbutton-color" content="#FFD700">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.0/build/pure-min.css" integrity="sha384-nn4HPE8lTHyVtfCBi5yW9d20FjT8BJwUXyWZT9InLYax14RDjBj46LmSztkmNP9w" crossorigin="anonymous">
   <link rel="manifest" href="./manifest.json">
 </head>
 <body>
@@ -23,14 +24,140 @@
   <!-- latest news -->
   <div id="latest"></div>
   <hr>
+  <main>
+      <p>
+        <button disabled class="js-push-btn pure-button pure-button-primary">
+          开启消息推送
+        </button>
+      </p>
+      <section class="subscription-details js-subscription-details is-invisible">
+        <p>一旦用户订阅了这个网站，那么就需要将订阅信息发送到服务器并保存到数据库当中。</p>
+        <pre><code class="js-subscription-json"></code></pre>
+      </section>
+    </main>
   <!-- javaScript -->
   <script async src="./js/main.js"></script>
   <script>
-  // Register the service worker
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').then(function(registration) {
-      // Registration was successful
+    var applicationServerPublicKey = 'BNLw1RT_88snuORrHA4Hil7xAIq0vn-Fe4kGV90XHKfIZlU4vw79AXtaVUryh1Y5f8t6-FziJXYKM4uLaiZxfzk'
+    var isSubscribed = false
+    var pushButton = document.querySelector('button')
+    var swRegistration = null
+
+    // Register the service worker
+    if ('serviceWorker' in navigator && 'PushManager' in window) {
+      navigator.serviceWorker.register('./sw.js').then(function(registration) {
+        swRegistration = registration
+        init()
+      })
+    } else {
+      console.warn('Push messaging is not supported')
+      pushButton.textContent = '消息推送不支持'
+    }
+
+    function urlB64ToUint8Array(base64String) {
+      const padding = '='.repeat((4 - base64String.length % 4) % 4);
+      const base64 = (base64String + padding)
+        .replace(/\-/g, '+')
+        .replace(/_/g, '/');
+
+      const rawData = window.atob(base64);
+      const outputArray = new Uint8Array(rawData.length);
+
+      for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+      }
+      return outputArray;
+    }
+
+    function init () {
+      pushButton.addEventListener('click', function () {
+        pushButton.disabled = true
+        if (isSubscribed) {
+          unsubscribeUser()
+        } else {
+          subscribeUser ()
+        }
+      })
+
+      swRegistration.pushManager.getSubscription()
+      .then(function (subscription) {
+        isSubscribed = !(subscription === null)
+
+        updateSubscriptionOnServer(subscription)
+
+        if (isSubscribed) {
+          console.log('订阅成功')
+        } else {
+          console.log('订阅失败')
+        }
+
+        updateBtn()
+      })
+    }
+
+    function updateBtn () {
+      if (isSubscribed) {
+        pushButton.textContent = '关闭消息通知'
+      } else {
+        pushButton.textContent = '开启消息通知'
+      }
+
+      pushButton.disabled = false
+    }
+
+  function subscribeUser() {
+    const applicationServerKey = urlB64ToUint8Array(applicationServerPublicKey);
+    swRegistration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: applicationServerKey
+    })
+    .then(function(subscription) {
+      console.log('User is subscribed:', subscription);
+
+      updateSubscriptionOnServer(subscription);
+
+      isSubscribed = true;
+
+      updateBtn();
+    })
+    .catch(function(err) {
+      console.log('Failed to subscribe the user: ', err);
+      updateBtn();
     });
+  }
+
+  function unsubscribeUser() {
+    swRegistration.pushManager.getSubscription()
+    .then(function(subscription) {
+      if (subscription) {
+        return subscription.unsubscribe();
+      }
+    })
+    .catch(function(error) {
+      console.log('Error unsubscribing', error);
+    })
+    .then(function() {
+      updateSubscriptionOnServer(null);
+
+      console.log('User is unsubscribed.');
+      isSubscribed = false;
+
+      updateBtn();
+    });
+  }
+
+  function updateSubscriptionOnServer(subscription) {
+    // TODO: Send subscription to application server
+    const subscriptionJson = document.querySelector('.js-subscription-json');
+    const subscriptionDetails =
+      document.querySelector('.js-subscription-details');
+
+    if (subscription) {
+      subscriptionJson.textContent = JSON.stringify(subscription);
+      subscriptionDetails.classList.remove('is-invisible');
+    } else {
+      subscriptionDetails.classList.add('is-invisible');
+    }
   }
   </script>
 </body>
